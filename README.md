@@ -20,10 +20,10 @@ Most teams will build a top-down 2D map. We're building a **first-person Helmet 
 | Member | Role | Owns |
 |---|---|---|
 | Sama | Frontend & Infrastructure | Repo, panorama viewer, state management |
-| Haneen | UI/UX & HUD Design | The visor overlay, animations, visual polish |
+| Haneen | NASA Data & Research | The visor overlay, animations, visual polish |
 | Mariem | Logic & Interactivity | Route planning, resource trade-offs, win/lose states |
-| Fatema | NASA Data & Research | Scene data, science targets, real NASA data |
-| Malak | Polish, Audio & Pitch | Sound design, briefing flow, final presentation |
+| Fatema | Polish, Audio & Pitch | Scene data, science targets, real NASA data |
+| Malak | UI/UX & HUD Design | Sound design, briefing flow, final presentation |
 
 See [`docs/team-roles.md`](docs/team-roles.md) for the full task breakdown.
 
