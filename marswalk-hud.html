@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marswalk Helmet HUD</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    overflow: hidden;
+    font-family: 'Share Tech Mono', monospace;
+    color: #00ffcc;
+  }
+  #panorama { width: 100vw; height: 100vh; }
+
+  /* === HUD OVERLAY ====================================================
+     HANEEN — replace these placeholder styles with the real helmet HUD
+     (your Tasks 3.1-3.5). This exists only so Sama can verify hotspots
+     and state wiring work before you design the real thing.
+  ==================================================================== */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+  .hud-corner {
+    position: absolute;
+    pointer-events: auto;
+    padding: 12px 16px;
+    border: 1px solid rgba(0, 255, 204, 0.4);
+    background: rgba(0, 20, 15, 0.6);
+    backdrop-filter: blur(4px);
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+  #hud-top-left { top: 16px; left: 16px; }
+  #hud-top-right { top: 16px; right: 16px; text-align: right; }
+  #hud-bottom-left { bottom: 16px; left: 16px; }
+  #hud-bottom-right { bottom: 16px; right: 16px; text-align: right; }
+  .scene-title {
+    font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 700;
+    color: #ffcc00; margin-bottom: 4px;
+  }
+  .coord { font-size: 11px; opacity: 0.7; }
+
+  /* Resource bars — MARIEM wires these to MISSION_STATE (Task 4.x). */
+  .resource-bar { margin: 6px 0; min-width: 160px; }
+  .resource-label {
+    font-size: 10px; text-transform: uppercase; opacity: 0.8;
+    margin-bottom: 2px; display: flex; justify-content: space-between;
+  }
+  .resource-track { height: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(0,255,204,0.3); }
+  .resource-fill { height: 100%; background: #00ffcc; transition: width 0.3s; }
+  .resource-fill.warn { background: #ffaa00; }
+  .resource-fill.crit { background: #ff3344; }
+
+  /* === TARGET INFO PANEL ==============================================
+     Slides in when a science hotspot is clicked.
+     All text comes from SCENE_DATA.targets — FATEMA owns that data.
+  ==================================================================== */
+  #target-panel {
+    position: fixed; top: 50%; right: -340px; transform: translateY(-50%);
+    width: 320px; background: rgba(0, 15, 12, 0.85);
+    border: 1px solid rgba(0, 255, 204, 0.5); padding: 20px;
+    transition: right 0.4s ease; z-index: 20; pointer-events: auto;
+  }
+  #target-panel.open { right: 16px; }
+  #target-panel h2 { font-family: 'Orbitron', sans-serif; font-size: 16px; color: #ffcc00; margin-bottom: 12px; }
+  #target-panel .field { margin: 8px 0; font-size: 12px; }
+  #target-panel .field .k { opacity: 0.6; text-transform: uppercase; font-size: 10px; }
+  #target-panel .field .v { color: #fff; }
+  #target-panel .briefing { font-size: 12px; line-height: 1.5; margin-top: 12px; opacity: 0.85; }
+  #target-panel .close { position: absolute; top: 8px; right: 12px; cursor: pointer; color: #ff3344; font-size: 18px; }
+
+  /* === MISSION BRIEFING (intro overlay) ===============================
+     MALAK — write the real briefing copy and styling (Task 5.3).
+  ==================================================================== */
+  #briefing {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+  }
+  #briefing .box { max-width: 520px; padding: 40px; border: 1px solid rgba(0,255,204,0.4); background: rgba(0,15,12,0.9); }
+  #briefing h1 { font-family: 'Orbitron', sans-serif; font-size: 28px; color: #ffcc00; margin-bottom: 16px; }
+  #briefing p { font-size: 14px; line-height: 1.6; opacity: 0.85; margin-bottom: 12px; }
+  #briefing button {
+    margin-top: 16px; padding: 10px 28px; background: transparent;
+    border: 1px solid #00ffcc; color: #00ffcc; font-family: 'Orbitron', sans-serif;
+    font-size: 14px; cursor: pointer; letter-spacing: 2px;
+  }
+  #briefing button:hover { background: rgba(0,255,204,0.15); }
+</style>
+</head>
+<body>
+
+<!-- Panorama viewer — SAMA owns this -->
+<div id="panorama"></div>
+
+<!-- HUD overlay — HANEEN owns the design -->
+<div id="hud">
+  <div id="hud-top-left" class="hud-corner">
+    <div class="scene-title" id="scene-title">—</div>
+    <div class="coord" id="scene-coord">LAT — / LON —</div>
+  </div>
+
+  <div id="hud-top-right" class="hud-corner">
+    <div style="font-size:10px;opacity:0.6;">SUIT STATUS</div>
+    <div class="resource-bar">
+      <div class="resource-label"><span>OXYGEN</span><span id="val-oxygen">100%</span></div>
+      <div class="resource-track"><div class="resource-fill" id="bar-oxygen" style="width:100%"></div></div>
+    </div>
+    <div class="resource-bar">
+      <div class="resource-label"><span>BATTERY</span><span id="val-battery">100%</span></div>
+      <div class="resource-track"><div class="resource-fill" id="bar-battery" style="width:100%"></div></div>
+    </div>
+    <div class="resource-bar">
+      <div class="resource-label"><span>COMMS</span><span id="val-comms">100%</span></div>
+      <div class="resource-track"><div class="resource-fill" id="bar-comms" style="width:100%"></div></div>
+    </div>
+    <div class="resource-bar">
+      <div class="resource-label"><span>RAD SHIELD</span><span id="val-radiation">100%</span></div>
+      <div class="resource-track"><div class="resource-fill" id="bar-radiation" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="hud-bottom-left" class="hud-corner">
+    <div style="font-size:10px;opacity:0.6;">OBJECTIVES</div>
+    <div id="objectives" style="font-size:11px;margin-top:4px;">Loading mission objectives...</div>
+  </div>
+
+  <div id="hud-bottom-right" class="hud-corner">
+    <div style="font-size:10px;opacity:0.6;">EVA TIMER</div>
+    <div id="eva-timer" style="font-size:18px;color:#ffcc00;">00:00</div>
+  </div>
+</div>
+
+<!-- Target info panel — Fatema's data shows up here -->
+<div id="target-panel">
+  <span class="close" onclick="closeTargetPanel()">&times;</span>
+  <h2 id="tp-name">—</h2>
+  <div class="field"><div class="k">Mineral</div><div class="v" id="tp-mineral">—</div></div>
+  <div class="field"><div class="k">Hazard Level</div><div class="v" id="tp-hazard">—</div></div>
+  <div class="field"><div class="k">Sector</div><div class="v" id="tp-coord">—</div></div>
+  <p class="briefing" id="tp-briefing">—</p>
+</div>
+
+<!-- Mission briefing overlay — Malak owns the copy -->
+<div id="briefing">
+  <div class="box">
+    <h1>EXTRAVEHICULAR ACTIVITY</h1>
+    <p>You are about to begin a Marswalk at <span id="briefing-site">the landing site</span>. Your suit has limited Oxygen, Battery, and Comms. Plan your route to reach all science targets and return safely.</p>
+    <p style="font-size:12px;opacity:0.6;">Click the highlighted markers to inspect science targets. Drag to look around; scroll to zoom.</p>
+    <button onclick="startEVA()">BEGIN EVA</button>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SCENE DATA  — FATEMA owns this block.
+   - Swap placeholder-mars.jpg with a real NASA equirectangular panorama.
+   - Set real pitch/yaw per target. TIP: leave hotSpotDebug:true below
+     and click the terrain — the console logs the exact yaw/pitch to use.
+     pitch: -90 (down) .. +90 (up);  yaw: -180 .. +180 (compass heading).
+===================================================================== */
+const SCENE_DATA = {
+  title: "Hogwallow Flats",
+  panorama: "assets/placeholder-mars.jpg",
+  coord: "LAT 18.4447N / LON 77.4508E",
+  objectives: [
+    "Collect hydrated silica sample",
+    "Survey delta sediment layers",
+    "Reach the ridge lookout"
+  ],
+  targets: [
+    {
+      id: "t-silica", pitch: -8, yaw: 12,
+      label: "Hydrated Silica Rock",
+      mineral: "Opaline Silica (Hydrated)",
+      hazard: "Low",
+      coord: "Sector A-3",
+      briefing: "Perseverance detected hydrated silica here — a strong candidate for preserving biosignatures. Sampling priority: HIGH."
+    },
+    {
+      id: "t-delta", pitch: -3, yaw: -25,
+      label: "Delta Sediment Layers",
+      mineral: "Clay / Carbonate",
+      hazard: "Medium (loose footing)",
+      coord: "Sector B-1",
+      briefing: "Layered sediments from an ancient river delta. Each layer is a chapter in Mars' wet past."
+    },
+    {
+      id: "t-ridge", pitch: 5, yaw: 145,
+      label: "Ridge Lookout",
+      mineral: "Basalt (volcanic)",
+      hazard: "High (steep slope, exposure)",
+      coord: "Sector D-4",
+      briefing: "Elevated vantage point. Offers comms line-of-sight but maximum radiation exposure in direct sun."
+    }
+  ]
+};
+
+/* =====================================================================
+   MISSION STATE  — MARIEM owns the logic.
+   - Wire addWaypoint() to terrain clicks (see hook note in initPanorama).
+   - Implement calculateRoute() + resource deduction.
+   - Call updateHUD() after any state change to refresh the bars.
+===================================================================== */
+const MISSION_STATE = {
+  started: false,
+  startTime: null,
+  oxygen: 100,
+  battery: 100,
+  comms: 100,
+  radiation: 100,
+  waypoints: [],
+  visitedTargets: new Set()
+};
+
+// Stub: drop a waypoint at a clicked panorama location.
+// viewer.mouseEventToCoords(event) returns [yaw, pitch] in degrees.
+function addWaypoint(yaw, pitch) {
+  MISSION_STATE.waypoints.push({ yaw, pitch, order: MISSION_STATE.waypoints.length });
+  // TODO (Mariem): draw the path, sum distances, deduct resources, updateHUD().
+  console.log("Waypoint added:", { yaw: yaw.toFixed(1), pitch: pitch.toFixed(1) },
+              "total:", MISSION_STATE.waypoints.length);
+}
+
+// Stub: compute totals before the astronaut commits to the route.
+function previewMission() {
+  const wp = MISSION_STATE.waypoints;
+  // TODO (Mariem): real distance + resource math.
+  return {
+    waypoints: wp.length,
+    oxygenCost: wp.length * 10,   // placeholder: 10% per waypoint
+    timeHours: wp.length * 0.4    // placeholder: ~24 min per waypoint
+  };
+}
+
+/* =====================================================================
+   PANORAMA + HOTSPOTS  — SAMA owns this (Tasks 2.2, 2.3, 2.4).
+===================================================================== */
+let viewer = null;
+
+function buildHotspots() {
+  return SCENE_DATA.targets.map(t => ({
+    id: t.id,
+    pitch: t.pitch,
+    yaw: t.yaw,
+    type: "info",
+    text: t.label,
+    clickFuncArgs: t.id,
+    clickFunc: selectTarget
+  }));
+}
+
+function initPanorama() {
+  viewer = pannellum.viewer("panorama", {
+    type: "equirectangular",
+    panorama: SCENE_DATA.panorama,
+    hotSpotDebug: true,   // logs yaw/pitch on click — essential for placing targets
+    compass: true,
+    showZoomCtrl: true,
+    showFullscreenCtrl: true,
+    autoLoad: true,
+    hotSpots: buildHotspots()
+  });
+
+  // Hook for Mariem: wire terrain clicks to addWaypoint().
+  // Pannellum fires 'mousedown' on bare terrain; hotspot clicks are
+  // handled separately by clickFunc. Uncomment once Mariem is ready,
+  // and guard against hotspot/drag clicks there.
+  // viewer.on("mousedown", function (event) {
+  //   const c = viewer.mouseEventToCoords(event);   // [yaw, pitch]
+  //   addWaypoint(c[0], c[1]);
+  // });
+
+  viewer.on("load", () => console.log("Panorama loaded:", SCENE_DATA.title));
+}
+
+/* ===== Target selection — wires Fatema's data into the side panel ==== */
+function selectTarget(targetId) {
+  const t = SCENE_DATA.targets.find(x => x.id === targetId);
+  if (!t) return;
+  document.getElementById("tp-name").textContent = t.label;
+  document.getElementById("tp-mineral").textContent = t.mineral;
+  document.getElementById("tp-hazard").textContent = t.hazard;
+  document.getElementById("tp-coord").textContent = t.coord;
+  document.getElementById("tp-briefing").textContent = t.briefing;
+  document.getElementById("target-panel").classList.add("open");
+  MISSION_STATE.visitedTargets.add(targetId);
+}
+function closeTargetPanel() {
+  document.getElementById("target-panel").classList.remove("open");
+}
+
+/* ===== HUD rendering — reflects MISSION_STATE into the bars ========== */
+function updateHUD() {
+  for (const f of ["oxygen", "battery", "comms", "radiation"]) {
+    const v = MISSION_STATE[f];
+    const bar = document.getElementById("bar-" + f);
+    document.getElementById("val-" + f).textContent = Math.round(v) + "%";
+    bar.style.width = v + "%";
+    bar.className = "resource-fill" + (v < 25 ? " crit" : v < 50 ? " warn" : "");
+  }
+}
+
+function updateSceneInfo() {
+  document.getElementById("scene-title").textContent = SCENE_DATA.title;
+  document.getElementById("scene-coord").textContent = SCENE_DATA.coord;
+  document.getElementById("briefing-site").textContent = SCENE_DATA.title;
+  document.getElementById("objectives").innerHTML = SCENE_DATA.objectives
+    .map((o, i) => `<div>${i + 1}. ${o}</div>`).join("");
+}
+
+/* ===== EVA timer — Malak owns the briefing flow; this is the clock === */
+let timerInterval = null;
+function startTimer() {
+  MISSION_STATE.startTime = Date.now();
+  timerInterval = setInterval(() => {
+    const e = Math.floor((Date.now() - MISSION_STATE.startTime) / 1000);
+    document.getElementById("eva-timer").textContent =
+      String(Math.floor(e / 60)).padStart(2, "0") + ":" + String(e % 60).padStart(2, "0");
+  }, 1000);
+}
+function startEVA() {
+  document.getElementById("briefing").style.display = "none";
+  MISSION_STATE.started = true;
+  startTimer();
+  updateHUD();
+}
+
+/* ===== Boot ===== */
+updateSceneInfo();
+initPanorama();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marswalk Helmet HUD</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+<link rel="stylesheet" href="css/hud.css"/>
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+</head>
+<body>
+
+<!-- Panorama viewer — SAMA owns this -->
+<div id="panorama"></div>
+
+<!-- HUD overlay — HANEEN replaces css/hud.css with the real visor design -->
+<div id="hud">
+  <div id="hud-top-left" class="hud-corner">
+    <div class="scene-title" id="scene-title">—</div>
+    <div class="coord" id="scene-coord">LAT — / LON —</div>
+  </div>
+
+  <div id="hud-top-right" class="hud-corner">
+    <div class="hud-label">SUIT STATUS</div>
+    <div class="resource-bar">
+      <div class="resource-label"><span>OXYGEN</span><span id="val-oxygen">100%</span></div>
+      <div class="resource-track"><div class="resource-fill" id="bar-oxygen" style="width:100%"></div></div>
+    </div>
+    <div class="resource-bar">
+      <div class="resource-label"><span>BATTERY</span><span id="val-battery">100%</span></div>
+      <div class="resource-track"><div class="resource-fill" id="bar-battery" style="width:100%"></div></div>
+    </div>
+    <div class="resource-bar">
+      <div class="resource-label"><span>COMMS</span><span id="val-comms">100%</span></div>
+      <div class="resource-track"><div class="resource-fill" id="bar-comms" style="width:100%"></div></div>
+    </div>
+    <div class="resource-bar">
+      <div class="resource-label"><span>RAD SHIELD</span><span id="val-radiation">100%</span></div>
+      <div class="resource-track"><div class="resource-fill" id="bar-radiation" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="hud-bottom-left" class="hud-corner">
+    <div class="hud-label">OBJECTIVES</div>
+    <div id="objectives">Loading mission objectives...</div>
+  </div>
+
+  <div id="hud-bottom-right" class="hud-corner">
+    <div class="hud-label">EVA TIMER</div>
+    <div id="eva-timer">00:00</div>
+  </div>
+</div>
+
+<!-- Target info panel — FATEMA's data shows up here -->
+<div id="target-panel">
+  <span class="close" onclick="closeTargetPanel()">&times;</span>
+  <h2 id="tp-name">—</h2>
+  <div class="field"><div class="k">Mineral</div><div class="v" id="tp-mineral">—</div></div>
+  <div class="field"><div class="k">Hazard Level</div><div class="v" id="tp-hazard">—</div></div>
+  <div class="field"><div class="k">Sector</div><div class="v" id="tp-coord">—</div></div>
+  <p class="briefing" id="tp-briefing">—</p>
+</div>
+
+<!-- Mission briefing overlay — MALAK owns the copy -->
+<div id="briefing">
+  <div class="box">
+    <h1>EXTRAVEHICULAR ACTIVITY</h1>
+    <p>You are about to begin a Marswalk at <span id="briefing-site">the landing site</span>. Your suit has limited Oxygen, Battery, and Comms. Plan your route to reach all science targets and return safely.</p>
+    <p class="hint">Click the highlighted markers to inspect science targets. Drag to look around; scroll to zoom.</p>
+    <button onclick="startEVA()">BEGIN EVA</button>
+  </div>
+</div>
+
+<!-- Load order matters: data first, then logic, then panorama -->
+<script src="js/data.js"></script>
+<script src="js/logic.js"></script>
+<script src="js/panorama.js"></script>
+
+</body>
+</html>
