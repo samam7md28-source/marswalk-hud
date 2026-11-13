@@ -9,8 +9,8 @@
    - comp = composition bars shown in Haneen's target card.
 ===================================================================== */
 const SCENE_DATA = {
-  title: "Jezero Crater Delta",
-  panorama: "assets/panoramas/jezero.jpg",
+  title: "Gediz Vallis",
+  panorama: "assets/panoramas/gediz_vallis.png",
   source: "NASA/JPL-Caltech/ASU/MSSS — Perseverance Mastcam-Z, Sols 466–474 (June 2022)",
   coord: "LAT 18.4447N / LON 77.4508E",
   objectives: [
