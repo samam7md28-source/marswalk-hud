@@ -1,20 +1,25 @@
 /* =====================================================================
-   ROUTE LOGIC  — MARIEM owns this file (Tasks 4.1 - 4.5).
-   Synchronized with Sama's panorama.js and Fatema's SCENE_DATA.
+   ROUTE LOGIC  — Updated to fix NaN bugs and add control hooks
 ===================================================================== */
 
-// Ensure MISSION_STATE matches what Sama's panorama.js expects
+// Initialize MISSION_STATE with solid default values to prevent NaN% errors
 if (typeof MISSION_STATE === 'undefined') {
   window.MISSION_STATE = {
     waypoints: [],
     visitedTargets: new Set(),
-    oxygen: 100,
-    battery: 100,
-    comms: 100,     // Percentage or active status read by HUD
-    radiation: 0,
+    oxygen: 100,      // Starts safely at 100%
+    battery: 100,     // Starts safely at 100%
+    comms: 100,       // Starts safely at 100%
+    radiation: 0,     // Starts at 0
     startTime: null,
     started: false
   };
+} else {
+  // Ensure existing state properties are never undefined/NaN
+  if (MISSION_STATE.oxygen === undefined) MISSION_STATE.oxygen = 100;
+  if (MISSION_STATE.battery === undefined) MISSION_STATE.battery = 100;
+  if (MISSION_STATE.comms === undefined) MISSION_STATE.comms = 100;
+  if (MISSION_STATE.radiation === undefined) MISSION_STATE.radiation = 0;
 }
 
 /**
@@ -39,66 +44,65 @@ function calculateSegmentDistance(p1, p2) {
   const dot = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
   const clampedDot = Math.max(-1, Math.min(1, dot));
   const angularDistance = Math.acos(clampedDot);
-  return angularDistance * 100; // Scaling factor for Martian terrain distance
+  return angularDistance * 100; 
 }
 
 /**
- * Task 4.1 & 4.2: Drop a waypoint at a clicked panorama location.
+ * Drop a waypoint at a clicked panorama location.
  */
 function addWaypoint(yaw, pitch) {
   const newWaypoint = { yaw, pitch, order: MISSION_STATE.waypoints.length };
   MISSION_STATE.waypoints.push(newWaypoint);
 
-  // If we have at least 2 waypoints, calculate distance & resource drain
   if (MISSION_STATE.waypoints.length >= 2) {
     const p1 = MISSION_STATE.waypoints[MISSION_STATE.waypoints.length - 2];
     const p2 = newWaypoint;
     
     const distance = calculateSegmentDistance(p1, p2);
     
-    // Task 4.3: Trade-off Math
     const oxygenCost = distance * 0.15;
-    const isExposed = pitch > 0;         // Sunlight exposure
-    const isBehindRidge = pitch < -10;   // Blocked / trench
+    const isExposed = pitch > 0;         
+    const isBehindRidge = pitch < -10;   
 
     let batteryDelta = -(distance * 0.1);
     let radiationDelta = 0;
 
     if (isExposed) {
-      batteryDelta += 5;     // Solar recharge bonus
-      radiationDelta += 2.5; // Higher radiation in the open sun
+      batteryDelta += 5;     
+      radiationDelta += 1.5; // 
     } else {
-      radiationDelta += 0.5; // Safe from cosmic rays in shadow
+      radiationDelta += 0.2; 
     }
 
-    // Update flat properties required by Sama's updateHUD() in panorama.js
+    // Update state safely with bounds (0 to 100)
     MISSION_STATE.oxygen = Math.max(0, MISSION_STATE.oxygen - oxygenCost);
     MISSION_STATE.battery = Math.min(100, Math.max(0, MISSION_STATE.battery + batteryDelta));
     MISSION_STATE.comms = isBehindRidge ? 0 : 100; 
-    MISSION_STATE.radiation = Math.min(100, MISSION_STATE.radiation + radiationDelta);
+    MISSION_STATE.radiation = Math.min(100, Math.max(0, MISSION_STATE.radiation + radiationDelta));
   }
 
-  // Automatically refresh Sama's HUD resource bars
   if (typeof updateHUD === 'function') {
     updateHUD();
   }
-
-  console.log("Waypoint added:", { yaw: yaw.toFixed(1), pitch: pitch.toFixed(1) },
-              "total waypoints:", MISSION_STATE.waypoints.length);
 }
 
 /**
- * Task 4.4: Compute totals before the astronaut commits to the route[cite: 2].
+ * Control Hook: Override a resource value (oxygen, battery, comms, radiation) for testing/debugging.
+ */
+function overrideResource(resourceName, value) {
+  if (MISSION_STATE.hasOwnProperty(resourceName)) {
+    MISSION_STATE[resourceName] = Math.max(0, Math.min(100, value));
+    if (typeof updateHUD === 'function') updateHUD();
+  }
+}
+
+/**
+ * Preview Mission
  */
 function previewMission() {
   const wp = MISSION_STATE.waypoints;
   if (wp.length < 2) {
-    return {
-      waypoints: wp.length,
-      oxygenCost: 0,
-      timeHours: 0,
-      warning: "Add at least 2 waypoints to preview route."
-    };
+    return { waypoints: wp.length, oxygenCost: 0, timeHours: 0, warning: "Add at least 2 waypoints." };
   }
 
   let totalDistance = 0;
@@ -106,24 +110,11 @@ function previewMission() {
     totalDistance += calculateSegmentDistance(wp[i], wp[i + 1]);
   }
 
-  const oxygenCost = totalDistance * 0.15;
-  const timeHours = (totalDistance / 1000) * 1.2;
-
   return {
     waypoints: wp.length,
     totalDistanceMeters: totalDistance.toFixed(1),
-    oxygenCost: Math.round(oxygenCost),
-    timeHours: timeHours.toFixed(2),
+    oxygenCost: Math.round(totalDistance * 0.15),
+    timeHours: ((totalDistance / 1000) * 1.2).toFixed(2),
     commsStatus: MISSION_STATE.comms > 50 ? "Stable" : "Blackout Risk"
   };
-}
-
-/**
- * Task 4.5: Check failure/success conditions
- */
-function checkMissionStatus() {
-  if (MISSION_STATE.oxygen <= 0 || MISSION_STATE.battery <= 0) {
-    return "FAILURE: Life support depleted.";
-  }
-  return "IN_PROGRESS";
 }
