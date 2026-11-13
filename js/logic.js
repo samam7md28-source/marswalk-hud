@@ -2,6 +2,11 @@
    ROUTE LOGIC  — MARIEM owns this file (Task 4.x).
    Stubs are provided so the rest of the app compiles; implement the
    real distance + resource math here.
+
+   Resource keys (match the HUD bars):
+     HUD.set("oxygen", value)   /   HUD.set("battery", value)
+     HUD.set("comms", value)    /   HUD.set("radiation", value)
+   Values are 0-100. The HUD auto-refreshes on each set().
 ===================================================================== */
 
 // Drop a waypoint at a clicked panorama location.
@@ -9,7 +14,7 @@
 function addWaypoint(yaw, pitch) {
   MISSION_STATE.waypoints.push({ yaw, pitch, order: MISSION_STATE.waypoints.length });
   // TODO (Mariem): draw the path on the panorama, sum distances,
-  // deduct resources, then call updateHUD().
+  // deduct resources via HUD.set(), then update MISSION_STATE.
   console.log("Waypoint added:", { yaw: yaw.toFixed(1), pitch: pitch.toFixed(1) },
               "total:", MISSION_STATE.waypoints.length);
 }
