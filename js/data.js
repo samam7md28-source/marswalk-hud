@@ -9,8 +9,9 @@
    - comp = composition bars shown in Haneen's target card.
 ===================================================================== */
 const SCENE_DATA = {
-  title: "Hogwallow Flats",
-  panorama: "assets/panoramas/placeholder-mars.jpg",
+  title: "Jezero Crater Delta",
+  panorama: "assets/panoramas/jezero.jpg",
+  source: "NASA/JPL-Caltech/ASU/MSSS — Perseverance Mastcam-Z, Sols 466–474 (June 2022)",
   coord: "LAT 18.4447N / LON 77.4508E",
   objectives: [
     "Collect hydrated silica sample",
@@ -59,10 +60,10 @@ const SCENE_DATA = {
 const MISSION_STATE = {
   started: false,
   startTime: null,
-  oxygen: 100,
-  battery: 100,
-  comms: 100,
-  radiation: 100,
+  oxygen: 86,
+  battery: 72,
+  comms: 94,
+  radiation: 18,
   waypoints: [],
   visitedTargets: new Set()
 };

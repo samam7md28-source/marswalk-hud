@@ -27,6 +27,11 @@ function initPanorama() {
   viewer = pannellum.viewer("panorama", {
     type: "equirectangular",
     panorama: SCENE_DATA.panorama,
+    haov: 360,           // full horizontal coverage
+    vaov: 101.01,        // partial vertical (Mastcam-Z mosaic FOV)
+    vOffset: 0,          // horizon roughly centered
+    minPitch: -40,       // limit downward pan (partial pano)
+    maxPitch: 40,        // limit upward pan (partial pano)
     hotSpotDebug: true,   // logs yaw/pitch on click — Fatema uses this to place real targets
     autoLoad: true,
     showZoomCtrl: false,   // scroll to zoom instead, keeps the HUD clean
