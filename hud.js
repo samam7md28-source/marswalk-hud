@@ -1,21 +1,52 @@
+
 /* =====================================================================
-   HUD CONTROLLER  — HANEEN's design, adapted by SAMA.
-   - Renders helmet HUD (boot sequence, resource bars, radar, cards).
-   - Synchronized with MISSION_STATE from logic_3.js.
+   HUD CONTROLLER + AUDIO SYSTEM
 ===================================================================== */
 (function(){
 const $=s=>document.querySelector(s), hud=$('#hud');
 
-// Audio Controller
-const bootAudio = document.getElementById('bootUp');
+// AUDIO SYSTEM
+const audio = {
+  boot: document.getElementById('bootUp'),
+  breathing: document.getElementById('helmetBreathing'),
+  radio: document.getElementById('radioStatic'),
+  alarm: document.getElementById('alarmBeep')
+};
 
-function playBootSound() {
-  if (!bootAudio) return;
-  bootAudio.currentTime = 0;
-  bootAudio.play().catch(error => {
-    console.log('Boot audio playback was blocked:', error);
-  });
+function playSound(sound, volume=0.5, loop=false) {
+  if (!sound) return;
+  sound.pause();
+  sound.currentTime = 0;
+  sound.volume = volume;
+  sound.loop = loop;
+  sound.play().catch(error => console.log('Audio playback blocked:', error));
 }
+
+function stopSound(sound) {
+  if (!sound) return;
+  sound.pause();
+  sound.currentTime = 0;
+}
+
+function startBreathing() {
+  playSound(audio.breathing, 0.35, true);
+}
+
+function stopBreathing() {
+  stopSound(audio.breathing);
+}
+
+// Enable audio after the user's first interaction
+let audioEnabled = false;
+
+function enableAudio() {
+  if (audioEnabled) return;
+  audioEnabled = true;
+  playSound(audio.boot, 0.5);
+  startBreathing();
+}
+
+document.addEventListener('pointerdown', enableAudio, { once: true });
 
 window.MISSION_STATE = window.MISSION_STATE || {
   waypoints: [],
@@ -26,15 +57,21 @@ window.MISSION_STATE = window.MISSION_STATE || {
 };
 
 let tick=0, heading=91, sec=7*3600+28*60+35, scanning=false, scanIdx=0, txtTimer;
+let alarmPlaying = false;
 
 window.HUD={
-  set(k,v){ MISSION_STATE[k] = Math.max(0, Math.min(100, v)); updateHUD(); },
+  set(k,v){
+    MISSION_STATE[k] = Math.max(0, Math.min(100, v));
+    updateHUD();
+  },
   log: say,
-  open(id){ const t = SCENE_DATA.targets.find(x => x.id === id); if(t) openCard(t); },
+  open(id){
+    const t = SCENE_DATA.targets.find(x => x.id === id);
+    if(t) openCard(t);
+  },
   close: closeCard
 };
 
-// Exposed globally so logic_3.js can trigger it on waypoint clicks
 window.updateHUD = function() {
   render();
 };
@@ -50,30 +87,39 @@ function say(m){
 
 function render(){
   document.querySelectorAll('.row').forEach(r=>{
-    const k = r.dataset.k; 
+    const k = r.dataset.k;
     const keyMap = { o2: 'oxygen', bat: 'battery', com: 'comms', rad: 'radiation' };
     const stateKey = keyMap[k] || k;
 
     const v = Math.round(MISSION_STATE[stateKey] || 0);
     const fillEl = r.querySelector('.fill');
     const valEl = r.querySelector('.v');
-    
+
     if (fillEl) fillEl.style.width = v + '%';
     if (valEl) valEl.textContent = v + '%';
-    
+
     r.classList.toggle('crit', stateKey === 'radiation' ? v > 70 : v < 20);
   });
 
   const a = MISSION_STATE.radiation > 70;
   document.body.classList.toggle('alert', a);
-  
+
   const cLbl = $('#cLbl');
   const cVal = $('#cVal');
   if (cLbl) cLbl.textContent = a ? 'RADIATION:' : 'DUST ACTIVITY:';
   if (cVal) cVal.textContent = a ? 'HIGH' : 'MODERATE';
+
+  // Radiation alarm
+  if (a && !alarmPlaying) {
+    alarmPlaying = true;
+    playSound(audio.alarm, 0.7, true);
+  } else if (!a && alarmPlaying) {
+    alarmPlaying = false;
+    stopSound(audio.alarm);
+  }
 }
 
-// Radar blips — one per target in SCENE_DATA
+// Radar blips
 if (typeof SCENE_DATA !== 'undefined' && SCENE_DATA.targets) {
   SCENE_DATA.targets.forEach(t=>{
     const a = t.bearing * Math.PI / 180, r = Math.min(t.dist / 120, 1) * 44;
@@ -99,6 +145,10 @@ function openCard(t){
   void c.offsetWidth;
   c.classList.add('open');
   c.setAttribute('aria-hidden','false');
+
+  // Radio static when a target is opened
+  if (audioEnabled) playSound(audio.radio, 0.4);
+
   say('TARGET '+t.id+' LOCKED');
   $('#close').focus({preventScroll:true});
 }
@@ -120,14 +170,21 @@ if (scanBtn) {
     if(scanning) return;
     scanning = true;
     closeCard();
+
+    if (!audioEnabled) enableAudio();
+
     const el = $('#scanTxt');
     el.textContent = 'SCANNING / ACTIVE';
     el.classList.add('active');
+
     setTimeout(()=>{
       scanning = false;
       el.classList.remove('active');
       el.textContent = 'SCANNING / IDLE';
-      openCard(SCENE_DATA.targets[scanIdx++ % SCENE_DATA.targets.length]);
+
+      if (SCENE_DATA.targets.length) {
+        openCard(SCENE_DATA.targets[scanIdx++ % SCENE_DATA.targets.length]);
+      }
     }, 2000);
   };
 }
@@ -175,6 +232,5 @@ function step(){
 }
 
 render();
-playBootSound();
 step();
 })();
