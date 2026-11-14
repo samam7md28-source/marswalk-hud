@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARES // EVA-07</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+<link rel="stylesheet" href="css/hud.css"/>
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+</head>
+<body>
+<!-- MISSION BRIEFING -->
+<section id="briefing">
+  <div class="briefing-content">
+
+    <div class="briefing-header">
+      <span>ARES // MISSION CONTROL</span>
+      <span>MISSION OLYMPUS-3</span>
+    </div>
+
+    <div class="briefing-title">
+      <p>EXTRAVEHICULAR ACTIVITY / EVA-07</p>
+      <h1>MISSION BRIEFING</h1>
+      <p class="briefing-subtitle">
+        MARS SURFACE EXPLORATION · SOL 018
+      </p>
+    </div>
+
+    <div class="briefing-grid">
+
+      <article class="briefing-card">
+        <h2>01 / SCIENCE OBJECTIVES</h2>
+        <ul>
+          <li>Survey the surrounding Martian terrain using 360° imagery.</li>
+          <li>Identify and document geological features and mineral targets.</li>
+          <li>Analyze surface composition and record scientific observations.</li>
+          <li>Map points of interest for further exploration.</li>
+        </ul>
+      </article>
+
+      <article class="briefing-card">
+        <h2>02 / ASTRONAUT CONSTRAINTS</h2>
+        <ul>
+          <li><strong>Oxygen:</strong> Monitor supply throughout the EVA.</li>
+          <li><strong>Battery:</strong> Preserve power for essential equipment.</li>
+          <li><strong>Radiation:</strong> Avoid prolonged exposure to high levels.</li>
+          <li><strong>Communication:</strong> Maintain a stable connection with mission control.</li>
+        </ul>
+      </article>
+
+    </div>
+
+    <div class="briefing-warning">
+      <span>⚠ MISSION PROTOCOL</span>
+      <p>Monitor life-support systems and environmental warnings throughout the mission.</p>
+    </div>
+
+    <button id="beginEVA" type="button">
+      BEGIN EVA <span>↗</span>
+    </button>
+
+    <div class="briefing-footer">
+      ARES EXPLORATION SYSTEMS <span>·</span> AUTHORIZED PERSONNEL ONLY
+    </div>
+
+  </div>
+</section>
+<div id="panorama"></div>
+
+<div id="vig"></div><div id="edge"></div><div id="lines"></div>
+
+<main id="hud" aria-label="Helmet HUD">
+
+  <header id="brand" class="b" style="--i:0">
+    <h1>ARES <i>//</i> EVA-07</h1>
+    <p>EXPLORATION SYSTEMS · BUILD 04.19</p>
+  </header>
+
+  <div id="mission" class="b" style="--i:1">
+    <span>MISSION <b>OLYMPUS-3</b></span><s></s>
+    <span class="tm">SOL <b>018</b> <b id="clock">07:28:35</b><small>LOCAL TIME</small></span><s></s>
+    <span>LINK <b>STABLE</b></span>
+  </div>
+
+  <div id="frame" class="b" style="--i:2"></div>
+  <div id="cross" class="b" style="--i:3" aria-hidden="true">
+    <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.2">
+      <circle cx="20" cy="20" r="9"/><path d="M20 2v10M20 28v10M2 20h10M28 20h10"/><circle cx="20" cy="20" r="1.4" fill="currentColor"/>
+    </svg>
+  </div>
+  <div id="scanTxt" class="b" style="--i:3" aria-live="polite">SCANNING / IDLE</div>
+
+  <div id="warn" role="alert">⚠ RADIATION HIGH · SEEK SHELTER</div>
+
+  <section id="life" class="panel b" style="--i:4">
+    <h2>LIFE SUPPORT / 01</h2>
+    <div class="row" data-k="oxygen"><span class="l">O₂ LEVEL</span><span class="track"><i class="fill"></i></span><span class="v">0%</span></div>
+    <div class="row amber" data-k="battery"><span class="l">BATTERY</span><span class="track"><i class="fill"></i></span><span class="v">0%</span></div>
+    <div class="row" data-k="comms"><span class="l">COMMS</span><span class="track"><i class="fill"></i></span><span class="v">0%</span></div>
+    <div class="row red" data-k="radiation"><span class="l">RADIATION</span><span class="track"><i class="fill"></i></span><span class="v">0%</span></div>
+  </section>
+
+  <section id="terrain" class="panel b" style="--i:5">
+    <h2>LOCAL TERRAIN / MAP</h2>
+    <svg viewBox="0 0 140 104" role="img" aria-label="Local terrain map">
+      <defs><pattern id="g" width="14" height="13" patternUnits="userSpaceOnUse"><path d="M14 0H0V13" fill="none" stroke="#4de7f7" stroke-opacity=".16"/></pattern></defs>
+      <rect width="140" height="104" fill="rgba(3,18,26,.8)"/><rect width="140" height="104" fill="url(#g)"/>
+      <g class="sweep"><path d="M70 52L14 26A62 62 0 0 0 14 78Z" fill="#4de7f7" fill-opacity=".16"/></g>
+      <circle cx="70" cy="52" r="22" fill="none" stroke="#4de7f7" stroke-opacity=".35"/>
+      <g id="blips" fill="#4de7f7"></g>
+      <circle cx="70" cy="52" r="3.2" fill="#ffb02e" style="filter:drop-shadow(0 0 4px #ffb02e)"/>
+    </svg>
+    <div class="foot"><span>SECTOR 7G</span><span>GRID 04-19</span></div>
+  </section>
+
+  <section id="telem" class="panel b" style="--i:6">
+    <h2>POSITION / TELEMETRY</h2>
+    <dl>
+      <dt>LAT</dt><dd>18.42° N</dd>
+      <dt>LON</dt><dd>226.31° E</dd>
+      <dt>ALT</dt><dd>+82.4 M · HEADING <span id="hdg">091</span>°</dd>
+    </dl>
+  </section>
+
+  <div id="bottomR" class="b" style="--i:7">
+    <div id="caution" class="panel">
+      <div class="cw">▲ CAUTION</div>
+      <div><span id="cLbl">DUST ACTIVITY:</span> <b id="cVal">MODERATE</b></div>
+    </div>
+    <button id="scanBtn" type="button">INITIATE SCAN ↗</button>
+  </div>
+
+  <aside id="card" aria-live="polite" aria-hidden="true">
+    <div class="lbl" id="cType">Sample</div>
+    <h2 id="cName">-</h2>
+    <dl id="cDl"></dl>
+    <div id="cComp"></div>
+    <p class="note" id="cNote"></p>
+    <button id="close" type="button">CLOSE</button>
+  </aside>
+</main>
+
+<div id="scan"></div>
+<div id="boot" aria-hidden="true">
+  <div class="bwrap">
+    <h1 id="bTitle">ARES / EVA-07</h1>
+    <p class="bsub">EXTRAVEHICULAR INTERFACE INITIALIZATION</p>
+    <div class="bbar"><i id="bFill"></i></div>
+    <ul id="bList"></ul>
+  </div>
+</div>
+<!-- Audio Assets -->
+<audio id="alarmBeep" src="audio/Alarm%20Beeps.wav" preload="auto"></audio>
+
+<audio id="bootUp" src="audio/Boot-up%20Chimes.m4a" preload="auto"></audio>
+
+<audio id="helmetBreathing" src="audio/Helmet%20Breathing.m4a" preload="auto" loop></audio>
+
+<audio id="radioStatic" src="audio/Radio%20Static.part" preload="auto"></audio>
+
+<!-- Load order: data → logic → hud → panorama (panorama calls HUD.open) -->
+<script src="js/data.js"></script>
+<script src="js/logic.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/panorama.js"></script>
+</body>
+</html>
